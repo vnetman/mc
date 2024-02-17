@@ -1,0 +1,45 @@
+menu "Water Level Manager Configuration"
+
+    config WLM_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            WiFi SSID (network name)
+
+    config WLM_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password
+
+    config WLM_WIFI_IPV4_ADDRESS
+        string "IPv4 address"
+	default "(use dhcp)"
+	help
+	    Specify a static IPv4 address
+
+    config WLM_WIFI_IPV4_MASK
+        string "IPv4 subnet mask"
+	default "(use dhcp)"
+	help
+	    Specify the subnet mask for the static IPv4 address
+
+    config WLM_WIFI_IPV4_GATEWAY
+        string "IPv4 gateway"
+	default "(use dhcp)"
+	help
+	    Specify the IPv4 default gateway for the static IPv4 address
+
+    config WLM_UDP_LOGGING_IPV4_ADDRESS
+        string "UDP logging IPv4 address"
+        default "192.168.29.255"
+        help
+            UDP logging destination IPv4 address
+
+    config WLM_UDP_LOGGING_PORT
+        int "UDP logging port number" 
+        default 18370
+        help
+            UDP logging destination port number
+
+endmenu
