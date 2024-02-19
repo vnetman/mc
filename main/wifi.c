@@ -8,14 +8,6 @@
 #include "lwip/inet.h"
 #include "mc.h"
 
-#ifdef NEVER
-#include <string.h>
-#include "freertos/task.h"
-#include "rom/ets_sys.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#endif
-
 /* FreeRTOS event group to signal when we are connected*/
 
 static BaseType_t wifi_connect_retry = 0;
@@ -25,11 +17,11 @@ static void wifi_event_handler (void* arg, esp_event_base_t event_base,
   EventGroupHandle_t mc_event_group = (EventGroupHandle_t) arg;
   
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-    ESP_LOGI("mc", "wifi: WIFI_EVENT_STA_START, invoking esp_wifi_connect()");
+    ESP_LOGI(LOG_TAG, "wifi: WIFI_EVENT_STA_START, invoking esp_wifi_connect()");
     esp_wifi_connect();
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
     if (wifi_connect_retry < 3) {
-      ESP_LOGI("mc", "wifi: disconnected, will retry (%d)", wifi_connect_retry);
+      ESP_LOGI(LOG_TAG, "wifi: disconnected, will retry (%d)", wifi_connect_retry);
       esp_wifi_connect();
       wifi_connect_retry++;
     } else {
@@ -38,7 +30,7 @@ static void wifi_event_handler (void* arg, esp_event_base_t event_base,
     }
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-    ESP_LOGI("mc", "wifi: connected, got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+    ESP_LOGI(LOG_TAG, "wifi: connected, got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     wifi_connect_retry = 0;
     xEventGroupSetBits(mc_event_group, EVENT_WIFI_CONNECTED);
   }
@@ -73,5 +65,5 @@ void start_wifi (EventGroupHandle_t mc_event_group) {
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  ESP_LOGI("mc", "wifi: start_wifi finished.");
+  ESP_LOGI(LOG_TAG, "wifi: start_wifi finished.");
 }

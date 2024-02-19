@@ -1,6 +1,9 @@
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "mc.h"
 #include "pins.h"
 
 void init_gpio_pins (void) {
@@ -13,7 +16,7 @@ void init_gpio_pins (void) {
     (1ull << MOTOR_OUT);
   
   if (gpio_config(&gpio_conf) != ESP_OK) {
-    ESP_LOGE("mc", "Unable to init GPIOs for outputs");
+    ESP_LOGE(LOG_TAG, "Unable to init GPIOs for outputs");
     return;
   }
 
@@ -24,7 +27,7 @@ void init_gpio_pins (void) {
   gpio_conf.pull_down_en = 1;
 
   if (gpio_config(&gpio_conf) != ESP_OK) {
-    ESP_LOGE("mc", "Unable to init GPIO for input");
+    ESP_LOGE(LOG_TAG, "Unable to init GPIO for input");
     return;
   }
 }

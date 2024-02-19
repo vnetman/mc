@@ -34,21 +34,21 @@ uint32_t oh_tank_level_voltage_last = 0;
 static void beep_on (struct mc_task_args_t_ *mc_task_args) {
   static bool on = true; /* I think this needs to be static */
   if (pdTRUE != xQueueSend(mc_task_args->beep_q, (void *) &on, pdMS_TO_TICKS(1000))) {
-    ESP_LOGE("mc", "oh_tank_level: Failed to enqueue beep ON");
+    ESP_LOGE(LOG_TAG, "oh_tank_level: Failed to enqueue beep ON");
   }
 }
 
 static void beep_off (struct mc_task_args_t_ *mc_task_args) {
   static bool on = false; /* I think this needs to be static */
   if (pdTRUE != xQueueSend(mc_task_args->beep_q, (void *) &on, pdMS_TO_TICKS(1000))) {
-    ESP_LOGE("mc", "oh_tank_level: Failed to enqueue beep OFF");
+    ESP_LOGE(LOG_TAG, "oh_tank_level: Failed to enqueue beep OFF");
   }
 }
 
 static void motor_off (struct mc_task_args_t_ *mc_task_args) {
   static bool on = false; /* I think this needs to be static */
   if (pdTRUE != xQueueSend(mc_task_args->motor_on_off_q, (void *) &on, pdMS_TO_TICKS(1000))) {
-    ESP_LOGE("mc", "oh_tank_level: Failed to enqueue motor OFF");
+    ESP_LOGE(LOG_TAG, "oh_tank_level: Failed to enqueue motor OFF");
   }
 }
 
@@ -67,7 +67,7 @@ void oh_tank_level_task (void *param) {
   ESP_ERROR_CHECK(adc1_config_channel_atten(channel, atten));
 
   val_type = esp_adc_cal_characterize(unit, atten, width, DEFAULT_VREF, &adc_chars);
-  ESP_LOGI("mc", "oh_tank_level: ADC configured and characterized (%s)",
+  ESP_LOGI(LOG_TAG, "oh_tank_level: ADC configured and characterized (%s)",
 	   (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) ? "eFuse Vref" :
 	   ((val_type == ESP_ADC_CAL_VAL_EFUSE_TP) ? "Two Point" : "Default"));
   
@@ -79,20 +79,20 @@ void oh_tank_level_task (void *param) {
   while (pdTRUE) {
     if (!motor_on) {
       /* Do nothing until the motor gets turned on */
-      ESP_LOGI("mc", "oh_tank_level: Waiting for the motor to start running");
+      ESP_LOGI(LOG_TAG, "oh_tank_level: Waiting for the motor to start running");
       bits = xEventGroupWaitBits(mc_task_args->mc_event_group,
 				 EVENT_MOTOR_RUNNING,
 				 pdFALSE /* don't clear bit on exit */,
 				 pdFALSE /* xWaitForAllBits */,
 				 portMAX_DELAY);
       if (bits & EVENT_MOTOR_RUNNING) {
-	ESP_LOGI("mc", "oh_tank_level: Motor has started running");
+	ESP_LOGI(LOG_TAG, "oh_tank_level: Motor has started running");
 	motor_on = true;
       }
     } else {
       bits = xEventGroupGetBits(mc_task_args->mc_event_group);
       if (bits & EVENT_MOTOR_RUNNING) {
-	ESP_LOGD("mc", "oh_tank_level: Motor is running, reading ADC");
+	ESP_LOGD(LOG_TAG, "oh_tank_level: Motor is running, reading ADC");
 	
 	adc_reading = 0;
 	for (i = 0; i < NO_OF_SAMPLES; i++) {
@@ -102,7 +102,7 @@ void oh_tank_level_task (void *param) {
 	
         /* Convert adc_reading to voltage in mV */
 	oh_tank_level_voltage_last = esp_adc_cal_raw_to_voltage(adc_reading, &adc_chars);
-	ESP_LOGI("mc", "oh_tank_level: reading raw = %lu, voltage = %lumV", adc_reading,
+	ESP_LOGI(LOG_TAG, "oh_tank_level: reading raw = %lu, voltage = %lumV", adc_reading,
 		 oh_tank_level_voltage_last);
 
 	if (oh_tank_level_voltage_last < 800) {
@@ -124,7 +124,7 @@ void oh_tank_level_task (void *param) {
 	  }
 	}
       } else {
-	ESP_LOGI("mc", "oh_tank_level: Motor has stopped running");
+	ESP_LOGI(LOG_TAG, "oh_tank_level: Motor has stopped running");
 	motor_on = false;
 	oh_tank_level_voltage_last = 0;
 	successive_full_indications = 0;

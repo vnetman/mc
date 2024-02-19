@@ -42,13 +42,13 @@ static void stop_udp_logging (void) {
   esp_log_set_vprintf(uart_logging_fn);
   close(fd_socket);
   fd_socket = -1;
-  ESP_LOGI("mc", "Stopped UDP logging");
+  ESP_LOGI(LOG_TAG, "Stopped UDP logging");
 }
 
 static void start_udp_logging (void) {
   fd_socket = socket(AF_INET, SOCK_DGRAM, 0);
   if (fd_socket < 0) {
-    ESP_LOGE("mc", "Failed to create socket for UDP logging: %s", strerror(errno));
+    ESP_LOGE(LOG_TAG, "Failed to create socket for UDP logging: %s", strerror(errno));
     fd_socket = -1;
     return;
   }
@@ -61,7 +61,7 @@ static void start_udp_logging (void) {
   logging_host_addr.sin_port = htons(CONFIG_WLM_UDP_LOGGING_PORT);
 
   uart_logging_fn = esp_log_set_vprintf(udp_logging_fn);
-  ESP_LOGI("mc", "Started UDP logging");
+  ESP_LOGI(LOG_TAG, "Started UDP logging");
 }
 
 void udp_logging_task (void *param) {
@@ -74,16 +74,16 @@ void udp_logging_task (void *param) {
 			       pdTRUE, pdFALSE, portMAX_DELAY);
     if (bits & EVENT_WIFI_CONNECTED) {
       if (fd_socket == -1) {
-	ESP_LOGI("mc", "Wifi up, starting UDP logging");
+	ESP_LOGI(LOG_TAG, "Wifi up, starting UDP logging");
 	start_udp_logging();
       } else {
-	ESP_LOGE("mc", "Wifi up, but looks like UDP logging is already enabled");
+	ESP_LOGE(LOG_TAG, "Wifi up, but looks like UDP logging is already enabled");
       }
     } else if (bits & EVENT_WIFI_FAILED) {
       if (fd_socket == -1) {
-	ESP_LOGE("mc", "Wifi down, but looks like UDP logging is already disabled");
+	ESP_LOGE(LOG_TAG, "Wifi down, but looks like UDP logging is already disabled");
       } else {
-	ESP_LOGI("mc", "Wifi down, stopping UDP logging");
+	ESP_LOGI(LOG_TAG, "Wifi down, stopping UDP logging");
 	stop_udp_logging();
       }
     }

@@ -31,14 +31,14 @@ void motor_task (void *param) {
     }
     
     if (pdTRUE == xQueueReceive(mc_task_args->motor_on_off_q, (void *) &desired_state,
-				pdMS_TO_TICKS(1000))) {
-      ESP_LOGD("mc", "motor_task: received request on q, desired_state = %s",
+				portMAX_DELAY)) {
+      ESP_LOGD(LOG_TAG, "motor_task: received request on q, desired_state = %s",
 	       desired_state ? "on" : "off");
       if (desired_state == motor_running) {
-	ESP_LOGI("mc", "motor_task: Ignoring request received on q because desired state "
+	ESP_LOGI(LOG_TAG, "motor_task: Ignoring request received on q because desired state "
 		 "(%s) is the same as the motor running state", desired_state ? "on" : "off");
       } else {
-	ESP_LOGI("mc", "motor_task: Obeying request received on q because desired state "
+	ESP_LOGI(LOG_TAG, "motor_task: Obeying request received on q because desired state "
 		 "(%s) is different from the motor running state (%s)",
 		 desired_state ? "on" : "off", motor_running ? "on" : "off");
 	gpio_set_level(MOTOR_OUT, desired_state ? 1 : 0);

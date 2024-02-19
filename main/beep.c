@@ -26,21 +26,20 @@ void beep_task (void *param) {
   /* Loop forever, looking for enqueues to the beep_q */
   while (1) {
     desired_state = false;
-    if (pdTRUE == xQueueReceive(beep_q, (void *) &desired_state, 
-				pdMS_TO_TICKS(1000))) {
+    if (pdTRUE == xQueueReceive(beep_q, (void *) &desired_state, portMAX_DELAY)) {
       /* Something was enqueued */
       if (desired_state == current_state) {
 	/* Nothing to do */
-	ESP_LOGI("mc", "beep_task: desired_state is identical to current_state");
+	ESP_LOGI(LOG_TAG, "beep_task: desired_state is identical to current_state");
 	continue;
       }
       if (desired_state == true) {
 	/* turn beep on */
-	ESP_LOGI("mc", "beep_task: setting beep on");
+	ESP_LOGI(LOG_TAG, "beep_task: setting beep on");
 	make_some_noise();
       } else {
 	/* turn beep off */
-	ESP_LOGI("mc", "beep_task: setting beep off");
+	ESP_LOGI(LOG_TAG, "beep_task: setting beep off");
 	gpio_set_level(BEEP_OUT, 0);
       }
       current_state = desired_state;
