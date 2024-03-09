@@ -5,6 +5,8 @@
 #include "pins.h"
 #include "mc.h"
 
+static char const *LOG_TAG = "mc|motor";
+
 void motor_task (void *param) {
   struct mc_task_args_t_ *mc_task_args = (struct mc_task_args_t_ *) param;
   bool motor_running = false;
@@ -31,15 +33,14 @@ void motor_task (void *param) {
     }
     
     if (pdTRUE == xQueueReceive(mc_task_args->motor_on_off_q, (void *) &desired_state,
-				portMAX_DELAY)) {
-      ESP_LOGD(LOG_TAG, "motor_task: received request on q, desired_state = %s",
-	       desired_state ? "on" : "off");
+				pdMS_TO_TICKS(1000))) {
+      ESP_LOGD(LOG_TAG, "rx request on q, desired_state = %s", desired_state ? "on" : "off");
       if (desired_state == motor_running) {
-	ESP_LOGI(LOG_TAG, "motor_task: Ignoring request received on q because desired state "
-		 "(%s) is the same as the motor running state", desired_state ? "on" : "off");
+	ESP_LOGI(LOG_TAG, "Ignoring request because desired state "
+		 "(%s) == motor running state", desired_state ? "on" : "off");
       } else {
-	ESP_LOGI(LOG_TAG, "motor_task: Obeying request received on q because desired state "
-		 "(%s) is different from the motor running state (%s)",
+	ESP_LOGI(LOG_TAG, "Obeying request because desired state "
+		 "(%s) != motor running state (%s)",
 		 desired_state ? "on" : "off", motor_running ? "on" : "off");
 	gpio_set_level(MOTOR_OUT, desired_state ? 1 : 0);
       }

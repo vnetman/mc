@@ -3,8 +3,9 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-#include "mc.h"
 #include "pins.h"
+
+static char const *LOG_TAG = "mc|gpio";
 
 void init_gpio_pins (void) {
   gpio_config_t gpio_conf;
@@ -28,6 +29,5 @@ void init_gpio_pins (void) {
 
   if (gpio_config(&gpio_conf) != ESP_OK) {
     ESP_LOGE(LOG_TAG, "Unable to init GPIO for input");
-    return;
   }
 }

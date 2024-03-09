@@ -14,8 +14,9 @@
 
 static int fd_socket = -1;
 static struct sockaddr_in logging_host_addr;
-static vprintf_like_t uart_logging_fn;
+static vprintf_like_t uart_logging_fn = 0;
 static char logging_buf[256 + 1]; /* All our logs will have to fit in 256 characters */
+static char const *LOG_TAG = "mc|udp_logging";
 
 static int udp_logging_fn (char const *fmt, va_list args) {
   int len, err;
@@ -38,11 +39,16 @@ static int udp_logging_fn (char const *fmt, va_list args) {
   return vprintf(fmt, args);
 }
 
-static void stop_udp_logging (void) {
-  esp_log_set_vprintf(uart_logging_fn);
-  close(fd_socket);
-  fd_socket = -1;
-  ESP_LOGI(LOG_TAG, "Stopped UDP logging");
+/* Can also be invoked externally, by the OTA code just before restarting */
+void stop_udp_logging (void) {
+  if (uart_logging_fn != 0) {
+    esp_log_set_vprintf(uart_logging_fn);
+    ESP_LOGI(LOG_TAG, "Stopped UDP logging");
+  }
+  if (fd_socket != -1) {
+    close(fd_socket);
+    fd_socket = -1;
+  }
 }
 
 static void start_udp_logging (void) {

@@ -18,8 +18,11 @@
 #define HASH_LEN 32 /* SHA-256 digest length */
 
 static char ota_write_data[BUFFSIZE + 1] = { 0 };
+
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
+
+static char const *LOG_TAG = "mc|ota";
 
 static void http_cleanup (esp_http_client_handle_t client) {
   esp_http_client_close(client);
@@ -60,12 +63,9 @@ static bool do_ota(char const *url) {
 	     "image become corrupted somehow.)");
   }
   
-  ESP_LOGI(LOG_TAG, "Running partition type %d subtype %d (offset 0x%08"PRIx32")",
-	   running->type, running->subtype, running->address);
-  
   client = esp_http_client_init(&config);
   if (client == NULL) {
-    ESP_LOGE(LOG_TAG, "Failed to initialise HTTP connection");
+    ESP_LOGE(LOG_TAG, "Failed to initialize HTTP connection");
     return false;
   }
   
@@ -104,10 +104,10 @@ static bool do_ota(char const *url) {
 		 &ota_write_data[sizeof(esp_image_header_t) +
 				 sizeof(esp_image_segment_header_t)],
 		 sizeof(esp_app_desc_t));
-	  ESP_LOGI(LOG_TAG, "New firmware version: %s", new_app_info.version);
+	  ESP_LOGI(LOG_TAG, "Incoming version: %s", new_app_info.version);
 
 	  if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-	    ESP_LOGI(LOG_TAG, "Running firmware version: %s", running_app_info.version);
+	    ESP_LOGI(LOG_TAG, "Running version: %s", running_app_info.version);
 	  }
 
 	  last_invalid_app = esp_ota_get_last_invalid_partition();
@@ -127,6 +127,7 @@ static bool do_ota(char const *url) {
 	      return false;
 	    }
 	  }
+	  
 	  image_header_was_checked = true;
 
 	  err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
@@ -196,6 +197,7 @@ static bool do_ota(char const *url) {
     return false;
   }
   ESP_LOGI(LOG_TAG, "OTA firmware upgrade completed, restarting");
+  stop_udp_logging();
   esp_restart();
   return true;
 }
@@ -237,14 +239,12 @@ void ota_task (void *param) {
   while (1) {
     if (pdTRUE == xQueueReceive(ota_q, (void *) &firmware_upgrade_command,
 				portMAX_DELAY)) {
-      ESP_LOGI(LOG_TAG, "OTA upgrade request:  %s",
-	       firmware_upgrade_command);
+      ESP_LOGI(LOG_TAG, "upgrade request:  %s",firmware_upgrade_command);
       /* firmware-upgrade=https://192.168.29.76:59443/mc.bin */
       if (strstr(firmware_upgrade_command, "firmware-upgrade=") == firmware_upgrade_command) {
 	url = firmware_upgrade_command + strlen("firmware-upgrade=");
 	ESP_LOGI(LOG_TAG, "Invoking do_ota(\"%s\")", url);
 	if (!do_ota(url)) {
-	} else {
 	  ESP_LOGE(LOG_TAG, "do_ota() failed");
 	  free(firmware_upgrade_command);
 	}

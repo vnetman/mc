@@ -11,7 +11,7 @@
 #include "esp_log.h"
 #include "mc.h"
 
-char const *LOG_TAG = "mc";
+static char const *LOG_TAG = "mc|main";
 
 void app_main() {
   BaseType_t ret;
@@ -77,7 +77,7 @@ void app_main() {
   }
   
   /* Start the task that starts/stops/handles the HTTP server. */
-  ret = xTaskCreate(http_server_task, "HTTP Server Task", 2048, &mc_task_args,
+  ret = xTaskCreate(http_server_task, "HTTP Server Task", 4096, &mc_task_args,
 		    tskIDLE_PRIORITY,NULL);
   if (ret != pdPASS) {
     ESP_LOGE(LOG_TAG, "Failed to create http server task");

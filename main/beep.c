@@ -7,6 +7,8 @@
 #include "pins.h"
 #include "mc.h"
 
+static char const *LOG_TAG = "mc|beep";
+
 static void make_some_noise (void) {
   BaseType_t i;
   for (i = 0; i < 4; i++) {
@@ -26,20 +28,21 @@ void beep_task (void *param) {
   /* Loop forever, looking for enqueues to the beep_q */
   while (1) {
     desired_state = false;
-    if (pdTRUE == xQueueReceive(beep_q, (void *) &desired_state, portMAX_DELAY)) {
+    if (pdTRUE == xQueueReceive(beep_q, (void *) &desired_state, pdMS_TO_TICKS(1000))) {
       /* Something was enqueued */
       if (desired_state == current_state) {
 	/* Nothing to do */
-	ESP_LOGI(LOG_TAG, "beep_task: desired_state is identical to current_state");
+	ESP_LOGI(LOG_TAG, "desired_state == current_state (%s)",
+		 desired_state ? "on" : "off");
 	continue;
       }
       if (desired_state == true) {
 	/* turn beep on */
-	ESP_LOGI(LOG_TAG, "beep_task: setting beep on");
+	ESP_LOGI(LOG_TAG, "setting beep on");
 	make_some_noise();
       } else {
 	/* turn beep off */
-	ESP_LOGI(LOG_TAG, "beep_task: setting beep off");
+	ESP_LOGI(LOG_TAG, "setting beep off");
 	gpio_set_level(BEEP_OUT, 0);
       }
       current_state = desired_state;

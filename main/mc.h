@@ -14,9 +14,6 @@ struct mc_task_args_t_ {
   QueueHandle_t ota_q;
 };
 
-/* main.c */
-extern char const *LOG_TAG;
-
 /* wifi.c */
 extern void start_wifi(EventGroupHandle_t);
 
@@ -37,6 +34,7 @@ extern void init_gpio_pins(void);
 
 /* udp_logging.c */
 extern void udp_logging_task(void *param);
+extern void stop_udp_logging(void);
 
 /* ota.c */
 extern void ota_task(void *param);
