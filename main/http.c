@@ -10,7 +10,7 @@
 #include "mc.h"
 
 static char *firmware_upgrade_command = NULL;
-extern uint32_t oh_tank_level_voltage_last;
+extern bool oh_tank_level_last;
 static char const *LOG_TAG = "mc|httpd";
 
 static esp_err_t mc_version_info_handler (httpd_req_t *req) {
@@ -134,10 +134,10 @@ static httpd_uri_t mc_version_info_uri = {
 static esp_err_t mc_status_handler (httpd_req_t *req) {
   struct mc_task_args_t_ *task_args;
   EventBits_t bits;
-  static char const response_fmt[] = "Motor is %s, tank level voltage is %lumV\n";
+  static char const response_fmt[] = "Motor is %s, tank is %s\n";
   char response[sizeof(response_fmt)
 		+ 11 /* "not running" */
-		+ 4 /* "1200" */
+		+ 8 /* "not full" */
 		+ 8 /* margin */ ];
 
   task_args = (struct mc_task_args_t_ *) req->user_ctx;
@@ -150,10 +150,10 @@ static esp_err_t mc_status_handler (httpd_req_t *req) {
   bits = xEventGroupGetBits(task_args->mc_event_group);
   if (bits & EVENT_MOTOR_RUNNING) {
     snprintf(response, sizeof(response), response_fmt, "running",
-	     oh_tank_level_voltage_last);
+	     oh_tank_level_last ? "full" : "not full");
   } else {
     snprintf(response, sizeof(response), response_fmt, "not running",
-	     oh_tank_level_voltage_last);
+	     oh_tank_level_last ? "full" : "not full");
   }
   response[sizeof(response) - 1] = '\0';
 

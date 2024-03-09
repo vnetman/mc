@@ -24,7 +24,7 @@ void init_gpio_pins (void) {
   memset(&gpio_conf, 0, sizeof(gpio_conf));
   gpio_conf.intr_type = GPIO_INTR_DISABLE;
   gpio_conf.mode = GPIO_MODE_INPUT;
-  gpio_conf.pin_bit_mask = (1ull << MOTOR_RUNNING_SENSE_IN);
+  gpio_conf.pin_bit_mask = (1ull << MOTOR_RUNNING_SENSE_IN) | (1ull << WATER_LEVEL_IN);
   gpio_conf.pull_down_en = 1;
 
   if (gpio_config(&gpio_conf) != ESP_OK) {
