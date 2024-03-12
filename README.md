@@ -58,6 +58,7 @@ Examples:
 curl -d "motor=on" http://192.168.29.9/mc_ctrl
 curl -d "motor=off" http://192.168.29.9/mc_ctrl
 curl http://192.168.29.9/mc_version_info
+curl http://192.168.29.9/mc_status
 curl -H "Content-Type: application/x-www-form-urlencoded" -d "firmware-upgrade=https://192.168.29.76:59443/mc.bin" http://192.168.29.9/mc_ctrl
 ```
 
