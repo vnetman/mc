@@ -154,7 +154,9 @@ static bool do_ota(char const *url) {
 	return false;
       }
       binary_file_length += data_read;
-      ESP_LOGD(LOG_TAG, "Written image length %d", binary_file_length);
+      /*
+      ESP_LOGI(LOG_TAG, "Written image length %d", binary_file_length);
+      */
     } else if (data_read == 0) {
       /*
        * As esp_http_client_read never returns negative error code, we rely on
