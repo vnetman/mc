@@ -6,8 +6,8 @@
 #include "pins.h"
 #include "mc.h"
 
-#define SUCCESSIVE_FULL_INDICATIONS_FOR_BEEP 10
-#define SUCCESSIVE_FULL_INDICATIONS_FOR_MOTOR_OFF 15
+#define SUCCESSIVE_FULL_INDICATIONS_FOR_BEEP 4
+#define SUCCESSIVE_FULL_INDICATIONS_FOR_MOTOR_OFF 5
     
 /* This is a global because the HTTP server reads it */
 unsigned int oh_tank_full_seconds;
