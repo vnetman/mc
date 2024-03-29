@@ -1,4 +1,6 @@
 #include <string.h>
+#include <sys/time.h>
+#include <errno.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_event.h"
@@ -10,8 +12,10 @@
 #include "mc.h"
 
 static char *firmware_upgrade_command = NULL;
-extern unsigned int oh_tank_full_seconds;
 static char const *LOG_TAG = "mc|httpd";
+
+/* extern from oh_tank_level.c indicating how many seconds the tank has been full for */
+extern unsigned int successive_full_indications;
 
 static esp_err_t mc_version_info_handler (httpd_req_t *req) {
   esp_partition_t const *next_partition, *running_partition, *boot_partition,
@@ -171,13 +175,14 @@ static esp_err_t mc_status_handler (httpd_req_t *req) {
   }
 
   bits = xEventGroupGetBits(task_args->mc_event_group);
-  if (oh_tank_full_seconds != 0) {
-    snprintf(http_response, sizeof(http_response), fmt_full,
-	     (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running",
-	     user_friendly_seconds(oh_tank_full_seconds));
-  } else {
+
+  if (successive_full_indications == 0) {
     snprintf(http_response, sizeof(http_response), fmt_not_full,
 	     (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running");
+  } else {
+    snprintf(http_response, sizeof(http_response), fmt_full,
+	     (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running",
+	     user_friendly_seconds(successive_full_indications));
   }
   http_response[sizeof(http_response) - 1] = '\0';
 
@@ -187,6 +192,31 @@ static esp_err_t mc_status_handler (httpd_req_t *req) {
     ESP_LOGI(LOG_TAG, "Response sent: \"%s\"", http_response);
   }
   return ESP_OK;
+}
+
+/* Helper to set the system time from HTTP POST request in the given buffer.
+   The buffer contains just the argument, e.g. "1711684510" if the original
+   POST buffer was "timeofday=1711684510" */
+static bool set_system_time (char const *buffer) {
+  unsigned long arg;
+  char *endptr;
+  struct timeval tv;
+
+  arg = strtoul(buffer, &endptr, 0);
+  if (*endptr != '\0') {
+    ESP_LOGE(LOG_TAG, "\"%s\" cannot be converted to a number", buffer);
+    return false;
+  }
+
+  tv.tv_sec = arg;
+  tv.tv_usec = 0;
+  if (0 == settimeofday(&tv, NULL)) {
+    ESP_LOGI(LOG_TAG, "Successfully set time");
+    return true;
+  }
+
+  ESP_LOGE(LOG_TAG, "Failed to set time; errno = %d", (int) errno);
+  return false;
 }
 
 static httpd_uri_t mc_status_uri = {
@@ -206,6 +236,7 @@ static esp_err_t mc_ctrl_handler (httpd_req_t *req) {
   /*
     motor=on
     motor=off
+    timeofday=<epoch> (get the epoch by running `date +%s` on Linux)
     firmware-upgrade=https://192.168.29.76:59443/mc.bin
   */
   ESP_LOGI(LOG_TAG, "Handling POST (%u bytes)", req->content_len);
@@ -236,7 +267,13 @@ static esp_err_t mc_ctrl_handler (httpd_req_t *req) {
   }
 
   buf[req->content_len] = '\0';
-  if (strstr(buf, "firmware-upgrade=") == buf) {
+  if (strstr(buf, "timeofday=") == buf) {
+    if (!set_system_time(buf + strlen("timeofday="))) {
+      free(buf);
+      httpd_resp_send_408(req);
+      return ESP_FAIL;
+    }
+  } else if (strstr(buf, "firmware-upgrade=") == buf) {
     /* Post the `buf` to the OTA queue */
     firmware_upgrade_command = strdup(buf);
     if (pdTRUE != xQueueSend(task_args->ota_q, (void *) &firmware_upgrade_command,

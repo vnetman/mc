@@ -49,9 +49,10 @@ venkat-dell | 192.168.29.76 | 00:db:df:c7:70:6d
 * `/mc_version_info` (GET method with no arguments)
 * `/mc_status` (GET method with no arguments)
 * `/mc_ctrl` (POST method)
-  * `motor=on`
-  * `motor=off`
-  * `firmware-upgrade=<url>`
+  - `motor=on`
+  - `motor=off`
+  - `firmware-upgrade=<url>`
+  - `timeofday=<url>`
   
 Examples: 
 ```
@@ -60,6 +61,7 @@ curl -d "motor=off" http://192.168.29.9/mc_ctrl
 curl http://192.168.29.9/mc_version_info
 curl http://192.168.29.9/mc_status
 curl -H "Content-Type: application/x-www-form-urlencoded" -d "firmware-upgrade=https://192.168.29.76:59443/mc.bin" http://192.168.29.9/mc_ctrl
+curl -d "timeofday=$(($(date +%s) + 19800))" http://192.168.29.9/mc_ctrl
 ```
 
 ## OTA
