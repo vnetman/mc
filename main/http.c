@@ -14,9 +14,6 @@
 static char *firmware_upgrade_command = NULL;
 static char const *LOG_TAG = "mc|httpd";
 
-/* extern from oh_tank_level.c indicating how many seconds the tank has been full for */
-extern unsigned int successive_full_indications;
-
 static esp_err_t mc_version_info_handler (httpd_req_t *req) {
   esp_partition_t const *next_partition, *running_partition, *boot_partition,
     *last_invalid_partition;
@@ -135,37 +132,11 @@ static httpd_uri_t mc_version_info_uri = {
     .user_ctx  = NULL /* will be filled in in start_webserver */
 };
 
-static char const *fmt_not_full = "Motor is %s, tank is not full\n";
-static char const *fmt_full = "Motor is %s, tank has been full for the last %s\n";
-
-/*"10000d 24h 60m 60s"*/
-static char user_friendly_seconds_str[18  + 1];
-/*"Motor is not running, tank has been full for the last 10000d 24h 60m 60s\n" */
-static char http_response[73 + 1];
-
-static char *user_friendly_seconds (unsigned int seconds) {
-  if (seconds < 60) {
-    snprintf(user_friendly_seconds_str, sizeof(user_friendly_seconds_str),
-	     "%us", seconds);
-  } else if (seconds < 3600) {
-    snprintf(user_friendly_seconds_str, sizeof(user_friendly_seconds_str),
-	     "%um %us", seconds / (unsigned int) 60, seconds % 60);
-  } else if (seconds < 86400) {
-    snprintf(user_friendly_seconds_str, sizeof(user_friendly_seconds_str),
-	     "%uh %um %us", seconds / (unsigned int) 3600,
-	     (seconds % 3600) / (unsigned int) 60, seconds % 60);
-  } else {
-    snprintf(user_friendly_seconds_str, sizeof(user_friendly_seconds_str),
-	     "%ud %uh %um %us", seconds / (unsigned int) 86400,
-	     (seconds % 86400) / (unsigned int) 3600,
-	     (seconds % 3600) / (unsigned int) 60, seconds % 60);
-  }
-  return &(user_friendly_seconds_str[0]);
-}
-
 static esp_err_t mc_status_handler (httpd_req_t *req) {
   struct mc_task_args_t_ *task_args;
   EventBits_t bits;
+  /* Motor is not running */
+  static char http_response[20 + 1];
 
   task_args = (struct mc_task_args_t_ *) req->user_ctx;
   if (!task_args) {
@@ -175,15 +146,8 @@ static esp_err_t mc_status_handler (httpd_req_t *req) {
   }
 
   bits = xEventGroupGetBits(task_args->mc_event_group);
-
-  if (successive_full_indications == 0) {
-    snprintf(http_response, sizeof(http_response), fmt_not_full,
-	     (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running");
-  } else {
-    snprintf(http_response, sizeof(http_response), fmt_full,
-	     (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running",
-	     user_friendly_seconds(successive_full_indications));
-  }
+  snprintf(http_response, sizeof(http_response), "Motor is %s",
+	   (bits & EVENT_MOTOR_RUNNING) ? "running" : "not running");
   http_response[sizeof(http_response) - 1] = '\0';
 
   if (ESP_OK != httpd_resp_send(req, http_response, strlen(http_response))) {

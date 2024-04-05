@@ -11,9 +11,6 @@
     
 static char const *LOG_TAG = "mc|oh_tank_level";
 
-/* This is a global because the http server reports this value */
-unsigned int successive_full_indications;
-
 static void beep_on (struct mc_task_args_t_ *mc_task_args) {
   static bool on = true; /* I think this needs to be static */
   if (pdTRUE != xQueueSend(mc_task_args->beep_q, (void *) &on, pdMS_TO_TICKS(1000))) {
@@ -113,8 +110,9 @@ static bool is_motor_running_now (struct mc_task_args_t_ *mc_task_args) {
 }
 
 void oh_tank_level_task (void *param) {
-  bool beeping_now, motor_was_running;
+  bool beeping_now, motor_was_running, is_reporting_full_now;
   struct mc_task_args_t_ *mc_task_args = (struct mc_task_args_t_ *) param;
+  unsigned int successive_full_indications = 0;
 
   clear_full_reports();
   
@@ -124,12 +122,6 @@ void oh_tank_level_task (void *param) {
   
   while (pdTRUE) {
     vTaskDelay(pdMS_TO_TICKS(1000));
-
-    if (update_and_report_tank_full(gpio_get_level(WATER_LEVEL_IN))) {
-      successive_full_indications++;
-    } else {
-      successive_full_indications = 0;
-    }
 
     if (!is_motor_running_now(mc_task_args)) {
       /* If we are beeping, stop it because the motor is now off */
@@ -148,6 +140,20 @@ void oh_tank_level_task (void *param) {
 	successive_full_indications = 0;
 	clear_full_reports();
 	ESP_LOGI(LOG_TAG, "Motor was stopped, now running");
+      }
+
+      /* Enable the water level sensor and wait for 500ms*/
+      gpio_set_level(WATER_LEVEL_ENABLE_OUT, 1);
+      vTaskDelay(pdMS_TO_TICKS(500));
+
+      /* Read the water level and disable the water level sensor */
+      is_reporting_full_now = gpio_get_level(WATER_LEVEL_IN);
+      gpio_set_level(WATER_LEVEL_ENABLE_OUT, 0);
+      
+      if (update_and_report_tank_full(is_reporting_full_now)) {
+	successive_full_indications++;
+      } else {
+	successive_full_indications = 0;
       }
 
       if (successive_full_indications == SUCCESSIVE_FULL_INDICATIONS_FOR_BEEP) {

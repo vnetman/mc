@@ -28,7 +28,7 @@ void init_gpio_pins (void) {
   gpio_conf.intr_type = GPIO_INTR_DISABLE;
   gpio_conf.mode = GPIO_MODE_OUTPUT;
   gpio_conf.pin_bit_mask = (1ull << BEEP_OUT) | (1ull << ERR_STATUS_OUT) |
-    (1ull << MOTOR_OUT);
+    (1ull << MOTOR_OUT) | (1ull << WATER_LEVEL_ENABLE_OUT);
   gpio_conf.pull_down_en = 0;
   gpio_conf.pull_up_en = 0;  
   if (gpio_config(&gpio_conf) != ESP_OK) {
